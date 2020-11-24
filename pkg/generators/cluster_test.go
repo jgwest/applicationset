@@ -14,7 +14,7 @@ import (
 
 	"testing"
 
-	argoprojiov1alpha1 "github.com/argoproj-labs/applicationset/api/v1alpha1"
+	argoprojiov1alpha1 "github.com/argoproj-labs/applicationset/pkg/apis/applicationset/v1alpha1"
 
 	"github.com/stretchr/testify/assert"
 )

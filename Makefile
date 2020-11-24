@@ -19,8 +19,8 @@ deploy:
 # Generate manifests e.g. CRD, RBAC etc.
 .PHONY: manifests
 manifests:
-	controller-gen paths=./api/... crd:trivialVersions=true output:dir=./manifests/crds/
-	controller-gen object paths=./api/...
+	controller-gen paths=./pkg/apis/... crd:trivialVersions=true output:dir=./manifests/crds/
+	controller-gen object paths=./pkg/apis/...
 
 # Run go fmt against code
 fmt:

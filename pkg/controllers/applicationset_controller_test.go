@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/argoproj-labs/applicationset/pkg/generators"
 	argov1alpha1 "github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	"github.com/stretchr/testify/assert"
@@ -14,10 +17,8 @@ import (
 	crtclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"testing"
-	"time"
 
-	argoprojiov1alpha1 "github.com/argoproj-labs/applicationset/api/v1alpha1"
+	argoprojiov1alpha1 "github.com/argoproj-labs/applicationset/pkg/apis/applicationset/v1alpha1"
 )
 
 type generatorMock struct {
@@ -59,53 +60,49 @@ func TestExtractApplications(t *testing.T) {
 	client := fake.NewFakeClientWithScheme(scheme)
 
 	for _, c := range []struct {
-		name				string
-		params				[]map[string]string
-		template			argoprojiov1alpha1.ApplicationSetTemplate
-		generateParamsError	error
-		rendererError		error
-		expectErr bool
+		name                string
+		params              []map[string]string
+		template            argoprojiov1alpha1.ApplicationSetTemplate
+		generateParamsError error
+		rendererError       error
+		expectErr           bool
 	}{
 		{
-			name: 		"Generate two applications",
-			params: 	[]map[string]string{{"name": "app1"}, {"name": "app2"}},
-			template:	argoprojiov1alpha1.ApplicationSetTemplate{
+			name:   "Generate two applications",
+			params: []map[string]string{{"name": "app1"}, {"name": "app2"}},
+			template: argoprojiov1alpha1.ApplicationSetTemplate{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:                       "name",
-					Namespace:                  "namespace",
-					Labels:                     map[string]string{ "label_name": "label_value"},
+					Name:      "name",
+					Namespace: "namespace",
+					Labels:    map[string]string{"label_name": "label_value"},
 				},
-				Spec:       argov1alpha1.ApplicationSpec{
-
-				},
+				Spec: argov1alpha1.ApplicationSpec{},
 			},
 		},
 		{
-			name: 		"Handles error from the generator",
+			name:                "Handles error from the generator",
 			generateParamsError: errors.New("error"),
-			expectErr: true,
+			expectErr:           true,
 		},
 		{
-			name: 		"Handles error from the render",
-			params: 	[]map[string]string{{"name": "app1"}, {"name": "app2"}},
-			template:	argoprojiov1alpha1.ApplicationSetTemplate{
+			name:   "Handles error from the render",
+			params: []map[string]string{{"name": "app1"}, {"name": "app2"}},
+			template: argoprojiov1alpha1.ApplicationSetTemplate{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:                       "name",
-					Namespace:                  "namespace",
-					Labels:                     map[string]string{ "label_name": "label_value"},
+					Name:      "name",
+					Namespace: "namespace",
+					Labels:    map[string]string{"label_name": "label_value"},
 				},
-				Spec:       argov1alpha1.ApplicationSpec{
-
-				},
+				Spec: argov1alpha1.ApplicationSpec{},
 			},
 			rendererError: errors.New("error"),
-			expectErr: true,
+			expectErr:     true,
 		},
-	}{
+	} {
 		cc := c
 		app := argov1alpha1.Application{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:                       "test",
+				Name: "test",
 			},
 		}
 
@@ -129,7 +126,7 @@ func TestExtractApplications(t *testing.T) {
 					if cc.rendererError != nil {
 						rendererMock.On("RenderTemplateParams", getTempApplication(cc.template), p).
 							Return(nil, cc.rendererError)
-					} else{
+					} else {
 						rendererMock.On("RenderTemplateParams", getTempApplication(cc.template), p).
 							Return(&app, nil)
 						expectedApps = append(expectedApps, app)
@@ -154,9 +151,9 @@ func TestExtractApplications(t *testing.T) {
 				},
 				Spec: argoprojiov1alpha1.ApplicationSetSpec{
 					Generators: []argoprojiov1alpha1.ApplicationSetGenerator{generator},
-					Template: cc.template,
+					Template:   cc.template,
 				},
-			},)
+			})
 
 			if cc.expectErr {
 				assert.Error(t, err)
@@ -172,7 +169,6 @@ func TestExtractApplications(t *testing.T) {
 
 		})
 	}
-
 
 }
 
@@ -697,12 +693,11 @@ func TestGetMinRequeueAfter(t *testing.T) {
 	argoprojiov1alpha1.AddToScheme(scheme)
 	argov1alpha1.AddToScheme(scheme)
 
-
 	client := fake.NewFakeClientWithScheme(scheme)
 
 	generator := argoprojiov1alpha1.ApplicationSetGenerator{
-		List: &argoprojiov1alpha1.ListGenerator{},
-		Git: &argoprojiov1alpha1.GitGenerator{},
+		List:     &argoprojiov1alpha1.ListGenerator{},
+		Git:      &argoprojiov1alpha1.GitGenerator{},
 		Clusters: &argoprojiov1alpha1.ClusterGenerator{},
 	}
 
@@ -723,18 +718,17 @@ func TestGetMinRequeueAfter(t *testing.T) {
 		Scheme:   scheme,
 		Recorder: record.NewFakeRecorder(0),
 		Generators: map[string]generators.Generator{
-			"List": &generatorMock10,
-			"Git": &generatorMock1,
+			"List":     &generatorMock10,
+			"Git":      &generatorMock1,
 			"Clusters": &generatorMock1,
 		},
 	}
-
 
 	got := r.getMinRequeueAfter(&argoprojiov1alpha1.ApplicationSet{
 		Spec: argoprojiov1alpha1.ApplicationSetSpec{
 			Generators: []argoprojiov1alpha1.ApplicationSetGenerator{generator},
 		},
-	},)
+	})
 
-	assert.Equal(t, time.Duration(1) * time.Second, got)
+	assert.Equal(t, time.Duration(1)*time.Second, got)
 }

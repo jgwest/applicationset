@@ -2,11 +2,10 @@ package generators
 
 import (
 	"errors"
-	argoprojiov1alpha1 "github.com/argoproj-labs/applicationset/api/v1alpha1"
 	"time"
+
+	argoprojiov1alpha1 "github.com/argoproj-labs/applicationset/pkg/apis/applicationset/v1alpha1"
 )
-
-
 
 // Generator defines the interface implemented by all ApplicationSet generators.
 type Generator interface {

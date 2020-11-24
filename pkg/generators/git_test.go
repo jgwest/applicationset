@@ -3,13 +3,14 @@ package generators
 import (
 	"context"
 	"fmt"
-	argoprojiov1alpha1 "github.com/argoproj-labs/applicationset/api/v1alpha1"
+	"testing"
+
+	argoprojiov1alpha1 "github.com/argoproj-labs/applicationset/pkg/apis/applicationset/v1alpha1"
 	"github.com/argoproj/argo-cd/reposerver/apiclient"
 	"github.com/argoproj/gitops-engine/pkg/utils/io"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
 )
 
 type clientSet struct {
@@ -33,7 +34,7 @@ func (a argoCDServiceMock) GetApps(ctx context.Context, repoURL string, revision
 func TestGitGenerateParams(t *testing.T) {
 
 	cases := []struct {
-		name		  string
+		name          string
 		directories   []argoprojiov1alpha1.GitDirectoryGeneratorItem
 		repoApps      []string
 		repoError     error
@@ -41,12 +42,12 @@ func TestGitGenerateParams(t *testing.T) {
 		expectedError error
 	}{
 		{
-			name: "happy flow - created apps",
+			name:        "happy flow - created apps",
 			directories: []argoprojiov1alpha1.GitDirectoryGeneratorItem{{"*"}},
 			repoApps: []string{
-					"app1",
-					"app2",
-					"p1/app3",
+				"app1",
+				"app2",
+				"p1/app3",
 			},
 			repoError: nil,
 			expected: []map[string]string{
@@ -56,7 +57,7 @@ func TestGitGenerateParams(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			name: "It filters application according to the paths",
+			name:        "It filters application according to the paths",
 			directories: []argoprojiov1alpha1.GitDirectoryGeneratorItem{{"p1/*"}, {"p1/*/*"}},
 			repoApps: []string{
 				"app1",
@@ -72,19 +73,19 @@ func TestGitGenerateParams(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			name: "handles empty response from repo server",
-			directories: []argoprojiov1alpha1.GitDirectoryGeneratorItem{{"*"}},
-			repoApps: []string{},
-			repoError: nil,
-			expected: []map[string]string{},
-			expectedError:nil,
+			name:          "handles empty response from repo server",
+			directories:   []argoprojiov1alpha1.GitDirectoryGeneratorItem{{"*"}},
+			repoApps:      []string{},
+			repoError:     nil,
+			expected:      []map[string]string{},
+			expectedError: nil,
 		},
 		{
-			name: "handles error from repo server",
-			directories: []argoprojiov1alpha1.GitDirectoryGeneratorItem{{"*"}},
-			repoApps: []string{},
-			repoError: fmt.Errorf("error"),
-			expected: []map[string]string{},
+			name:          "handles error from repo server",
+			directories:   []argoprojiov1alpha1.GitDirectoryGeneratorItem{{"*"}},
+			repoApps:      []string{},
+			repoError:     fmt.Errorf("error"),
+			expected:      []map[string]string{},
 			expectedError: fmt.Errorf("error"),
 		},
 	}
