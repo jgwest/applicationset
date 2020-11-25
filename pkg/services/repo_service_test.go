@@ -3,13 +3,15 @@ package services
 import (
 	"context"
 	"errors"
+
+	"testing"
+
 	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	"github.com/argoproj/argo-cd/reposerver/apiclient"
-	"github.com/argoproj/gitops-engine/pkg/utils/io"
+	"github.com/argoproj/argo-cd/util/io"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc"
-	"testing"
 )
 
 type ArgocdRepositoryMock struct {
@@ -49,7 +51,7 @@ type closer struct {
 	mock.Mock
 }
 
-func (c closer) Close() error{
+func (c closer) Close() error {
 	return nil
 }
 
@@ -63,28 +65,26 @@ func (r repoClientsetMock) NewRepoServerClient() (io.Closer, apiclient.RepoServe
 	return closer{}, args.Get(0).(apiclient.RepoServerServiceClient), args.Error(1)
 }
 
-
 func TestGetApps(t *testing.T) {
 
 	for _, c := range []struct {
-		name			string
-		repoURL     	string
-		revision		string
-		repoRes			*v1alpha1.Repository
-		repoErr			error
-		appRes			*apiclient.AppList
-		appError		error
-		expected   		[]string
-		expectedError	error
+		name          string
+		repoURL       string
+		revision      string
+		repoRes       *v1alpha1.Repository
+		repoErr       error
+		appRes        *apiclient.AppList
+		appError      error
+		expected      []string
+		expectedError error
 	}{
 		{
 			"Happy Flow",
 			"repoURL",
 			"revision",
-			&v1alpha1.Repository{
-			},
+			&v1alpha1.Repository{},
 			nil,
-			&apiclient.AppList {
+			&apiclient.AppList{
 				Apps: map[string]string{
 					"app1": "",
 					"app2": "",
@@ -98,10 +98,9 @@ func TestGetApps(t *testing.T) {
 			"handles GetRepository error",
 			"repoURL",
 			"revision",
-			&v1alpha1.Repository{
-			},
+			&v1alpha1.Repository{},
 			errors.New("error"),
-			&apiclient.AppList {
+			&apiclient.AppList{
 				Apps: map[string]string{
 					"app1": "",
 					"app2": "",
@@ -115,10 +114,9 @@ func TestGetApps(t *testing.T) {
 			"handles ListApps error",
 			"repoURL",
 			"revision",
-			&v1alpha1.Repository{
-			},
+			&v1alpha1.Repository{},
 			nil,
-			&apiclient.AppList {
+			&apiclient.AppList{
 				Apps: map[string]string{
 					"app1": "",
 					"app2": "",
@@ -128,7 +126,7 @@ func TestGetApps(t *testing.T) {
 			[]string{},
 			errors.New("Error in ListApps: error"),
 		},
-	}{
+	} {
 		cc := c
 		t.Run(cc.name, func(t *testing.T) {
 			argocdRepositoryMock := ArgocdRepositoryMock{}
@@ -138,7 +136,7 @@ func TestGetApps(t *testing.T) {
 			argocdRepositoryMock.On("GetRepository", mock.Anything, cc.repoURL).Return(cc.repoRes, cc.repoErr)
 
 			repoServerClientMock.On("ListApps", mock.Anything, &apiclient.ListAppsRequest{
-				Repo: cc.repoRes,
+				Repo:     cc.repoRes,
 				Revision: cc.revision,
 			}).Return(cc.appRes, cc.appError)
 
@@ -146,7 +144,7 @@ func TestGetApps(t *testing.T) {
 
 			argocd := argoCDService{
 				repositoriesDB: argocdRepositoryMock,
-				repoClientset: repoClientsetMock,
+				repoClientset:  repoClientsetMock,
 			}
 			got, err := argocd.GetApps(context.TODO(), cc.repoURL, cc.revision)
 
