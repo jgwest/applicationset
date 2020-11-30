@@ -6,6 +6,7 @@ require (
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/argoproj/argo-cd v1.7.6
 	github.com/argoproj/gitops-engine v0.1.3-0.20200904164417-c04f859da9b2
+	github.com/argoproj/pkg v0.0.0-20200624215116-23e74cb168fe
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/pkg/errors v0.9.1
@@ -22,6 +23,8 @@ require (
 )
 
 replace (
+	github.com/go-logr/logr => github.com/go-logr/logr v0.2.1
+	github.com/go-logr/zapr => github.com/go-logr/zapr v0.2.0
 	k8s.io/api => k8s.io/api v0.18.8
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.18.8
 	k8s.io/apimachinery => k8s.io/apimachinery v0.18.8
@@ -46,6 +49,4 @@ replace (
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.18.8
 	k8s.io/sample-cli-plugin => k8s.io/sample-cli-plugin v0.18.8
 	k8s.io/sample-controller => k8s.io/sample-controller v0.18.8
-	github.com/go-logr/logr => github.com/go-logr/logr v0.2.1
-	github.com/go-logr/zapr => github.com/go-logr/zapr v0.2.0
 )
