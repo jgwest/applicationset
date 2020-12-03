@@ -1,6 +1,4 @@
 /*
-
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -19,7 +17,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"time"
 
 	"github.com/argoproj-labs/applicationset/pkg/generators"
@@ -46,7 +43,7 @@ type ApplicationSetReconciler struct {
 	client.Client
 	Scheme     *runtime.Scheme
 	Recorder   record.EventRecorder
-	Generators map[string]generators.Generator
+	Generators generators.GeneratorList
 	utils.Policy
 	utils.Renderer
 }
@@ -100,29 +97,11 @@ func (r *ApplicationSetReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 	}, nil
 }
 
-func (r *ApplicationSetReconciler) GetRelevantGenerators(requestedGenerator *argoprojiov1alpha1.ApplicationSetGenerator) []generators.Generator {
-	var res []generators.Generator
-
-	v := reflect.Indirect(reflect.ValueOf(requestedGenerator))
-	for i := 0; i < v.NumField(); i++ {
-		field := v.Field(i)
-		if !field.CanInterface() {
-			continue
-		}
-
-		if !reflect.ValueOf(field.Interface()).IsNil() {
-			res = append(res, r.Generators[v.Type().Field(i).Name])
-		}
-	}
-
-	return res
-}
-
 func (r *ApplicationSetReconciler) getMinRequeueAfter(applicationSetInfo *argoprojiov1alpha1.ApplicationSet) time.Duration {
 	var res time.Duration
 	for _, requestedGenerator := range applicationSetInfo.Spec.Generators {
 
-		generators := r.GetRelevantGenerators(&requestedGenerator)
+		generators := r.Generators.ExtractInterfaces(&requestedGenerator)
 
 		for _, g := range generators {
 			t := g.GetRequeueAfter(&requestedGenerator)
@@ -155,7 +134,7 @@ func (r *ApplicationSetReconciler) generateApplications(applicationSetInfo argop
 	var firstError error
 	tmplApplication := getTempApplication(applicationSetInfo.Spec.Template)
 	for _, requestedGenerator := range applicationSetInfo.Spec.Generators {
-		generators := r.GetRelevantGenerators(&requestedGenerator)
+		generators := r.Generators.ExtractInterfaces(&requestedGenerator)
 		for _, g := range generators {
 			params, err := g.GenerateParams(&requestedGenerator)
 			if err != nil {

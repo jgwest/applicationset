@@ -2,8 +2,9 @@ package generators
 
 import (
 	"errors"
-	argoprojiov1alpha1 "github.com/argoproj-labs/applicationset/api/v1alpha1"
 	"time"
+
+	argoprojiov1alpha1 "github.com/argoproj-labs/applicationset/api/v1alpha1"
 )
 
 // Generator defines the interface implemented by all ApplicationSet generators.
@@ -21,3 +22,26 @@ type Generator interface {
 
 var EmptyAppSetGeneratorError = errors.New("ApplicationSet is empty")
 var NoRequeueAfter time.Duration
+
+// GeneratorList contains Generator interface references for each of the supported generator types.
+type GeneratorList struct {
+	Cluster Generator
+	List    Generator
+	Git     Generator
+}
+
+// ExtractInterfaces returns the corresponding generators.Generator(s) that are specified in the CRD element
+func (sg *GeneratorList) ExtractInterfaces(requestedGenerator *argoprojiov1alpha1.ApplicationSetGenerator) []Generator {
+	var res []Generator
+	if requestedGenerator.Clusters != nil {
+		res = append(res, sg.Cluster)
+	}
+	if requestedGenerator.Git != nil {
+		res = append(res, sg.Git)
+	}
+	if requestedGenerator.List != nil {
+		res = append(res, sg.List)
+	}
+
+	return res
+}
