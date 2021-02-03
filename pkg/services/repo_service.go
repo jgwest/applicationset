@@ -126,7 +126,7 @@ func (a *argoCDService) GetFileContent(ctx context.Context, repoURL string, revi
 func checkoutRepo(gitRepoClient git.Client, revision string) error {
 	err := gitRepoClient.Init()
 	if err != nil {
-		return errors.Wrap(err, "Error during initiliazing repo")
+		return errors.Wrap(err, "Error during initializing repo")
 	}
 
 	err = gitRepoClient.Fetch()
