@@ -60,7 +60,7 @@ manifests: generate
 .PHONY: lint
 lint:
 	golangci-lint --version
-	GOMAXPROCS=2 golangci-lint run --fix --verbose --timeout 300s
+	GOMAXPROCS=2 golangci-lint run --verbose --timeout 300s
 
 # Run go fmt against code
 .PHONY: fmt
@@ -80,7 +80,7 @@ start-e2e:
 # Begin the tests, targetting the standalone controller (started by make start-e2e) and the e2e argo-cd (started by make start-e2e)
 .PHONY: test-e2e
 test-e2e:
-	NAMESPACE=argocd-e2e go test -race -count=1 -v -timeout 480s ./test/e2e/applicationset
+	NAMESPACE=argocd-e2e go test -race -count=1 -v -timeout 1200s ./test/e2e/applicationset
 
 # Generate code
 generate: controller-gen

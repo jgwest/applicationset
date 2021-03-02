@@ -23,6 +23,7 @@ type RepositoryDB interface {
 type argoCDService struct {
 	repositoriesDB RepositoryDB
 	repoClientset  apiclient.Clientset
+	rateLimiter    repoRateLimiter
 }
 
 type Repos interface {
@@ -36,6 +37,7 @@ func NewArgoCDService(db db.ArgoDB, repoServerAddress string) Repos {
 	return &argoCDService{
 		repositoriesDB: db.(RepositoryDB),
 		repoClientset:  apiclient.NewRepoServerClientset(repoServerAddress, 5),
+		rateLimiter:    repoRateLimiter{cacheMap: map[string]*repoCacheEntry{}},
 	}
 }
 
@@ -52,11 +54,7 @@ func (a *argoCDService) GetApps(ctx context.Context, repoURL string, revision st
 		return nil, errors.Wrap(err, "Error in creating repo service client")
 	}
 
-	apps, err := repoClient.ListApps(ctx, &apiclient.ListAppsRequest{
-		Repo:     repo,
-		Revision: revision,
-	})
-	log.Debugf("apps - %#v", apps)
+	err = checkoutRepo(gitRepoClient, revision, repoURL, a.rateLimiter)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error in ListApps")
 	}
@@ -82,7 +80,7 @@ func (a *argoCDService) GetPaths(ctx context.Context, repoURL string, revision s
 		return nil, err
 	}
 
-	err = checkoutRepo(gitRepoClient, revision)
+	err = checkoutRepo(gitRepoClient, revision, repoURL, a.rateLimiter)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +105,7 @@ func (a *argoCDService) GetFileContent(ctx context.Context, repoURL string, revi
 		return nil, err
 	}
 
-	err = checkoutRepo(gitRepoClient, revision)
+	err = checkoutRepo(gitRepoClient, revision, repoURL, a.rateLimiter)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +118,10 @@ func (a *argoCDService) GetFileContent(ctx context.Context, repoURL string, revi
 	return bytes, nil
 }
 
-func checkoutRepo(gitRepoClient git.Client, revision string) error {
+func checkoutRepo(gitRepoClient git.Client, revision string, repoURL string, rateLimiter repoRateLimiter) error {
+
+	rateLimiter.EnsureGitRepoRateLimit(repoURL)
+
 	err := gitRepoClient.Init()
 	if err != nil {
 		return errors.Wrap(err, "Error during initiliazing repo")
