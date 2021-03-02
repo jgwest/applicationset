@@ -20,8 +20,9 @@ type RepositoryDB interface {
 }
 
 type argoCDService struct {
-	repositoriesDB RepositoryDB
-	repoClientset  apiclient.Clientset
+	repositoriesDB  RepositoryDB
+	repoClientset   apiclient.Clientset
+	repositoryCache *repoCache
 }
 
 type Repos interface {
@@ -39,8 +40,9 @@ type Repos interface {
 func NewArgoCDService(db db.ArgoDB, repoServerAddress string) Repos {
 
 	return &argoCDService{
-		repositoriesDB: db.(RepositoryDB),
-		repoClientset:  apiclient.NewRepoServerClientset(repoServerAddress, 5),
+		repositoriesDB:  db.(RepositoryDB),
+		repoClientset:   apiclient.NewRepoServerClientset(repoServerAddress, 5),
+		repositoryCache: &repoCache{cacheMap: map[string]*repoCacheEntry{}},
 	}
 }
 
@@ -50,18 +52,17 @@ func (a *argoCDService) GetFilePaths(ctx context.Context, repoURL string, revisi
 		return nil, errors.Wrap(err, "Error in GetRepository")
 	}
 
-	gitRepoClient, err := git.NewClient(repo.Repo, repo.GetGitCreds(), repo.IsInsecure(), repo.IsLFSEnabled())
-
+	repoCache, err := a.repositoryCache.GetOrGenerateCacheEntry(repo)
 	if err != nil {
 		return nil, err
 	}
 
-	err = checkoutRepo(gitRepoClient, revision)
+	err = checkoutRepo(repoCache.gitClient, revision)
 	if err != nil {
 		return nil, err
 	}
 
-	paths, err := gitRepoClient.LsFiles(pattern)
+	paths, err := repoCache.gitClient.LsFiles(pattern)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error during listing files of local repo")
 	}
@@ -76,10 +77,17 @@ func (a *argoCDService) GetDirectories(ctx context.Context, repoURL string, revi
 		return nil, errors.Wrap(err, "Error in GetRepository")
 	}
 
-	gitRepoClient, err := git.NewClient(repo.Repo, repo.GetGitCreds(), repo.IsInsecure(), repo.IsLFSEnabled())
+	repoCache, err := a.repositoryCache.GetOrGenerateCacheEntry(repo)
 	if err != nil {
 		return nil, err
 	}
+
+	gitRepoClient := repoCache.gitClient
+
+	// gitRepoClient, err := git.NewClient(repo.Repo, repo.GetGitCreds(), repo.IsInsecure(), repo.IsLFSEnabled())
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	err = checkoutRepo(gitRepoClient, revision)
 	if err != nil {
@@ -129,11 +137,23 @@ func (a *argoCDService) GetFileContent(ctx context.Context, repoURL string, revi
 		return nil, errors.Wrap(err, "Error in GetRepository")
 	}
 
-	gitRepoClient, err := git.NewClient(repo.Repo, repo.GetGitCreds(), repo.IsInsecure(), repo.IsLFSEnabled())
+	// gitRepoClient, err := git.NewClient(repo.Repo, repo.GetGitCreds(), repo.IsInsecure(), repo.IsLFSEnabled())
 
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	repoCache, err := a.repositoryCache.GetOrGenerateCacheEntry(repo)
 	if err != nil {
 		return nil, err
 	}
+
+	gitRepoClient := repoCache.gitClient
+
+	// gitRepoClient, err := git.NewClient(repo.Repo, repo.GetGitCreds(), repo.IsInsecure(), repo.IsLFSEnabled())
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	err = checkoutRepo(gitRepoClient, revision)
 	if err != nil {
@@ -149,15 +169,16 @@ func (a *argoCDService) GetFileContent(ctx context.Context, repoURL string, revi
 }
 
 func checkoutRepo(gitRepoClient git.Client, revision string) error {
-	err := gitRepoClient.Init()
-	if err != nil {
-		return errors.Wrap(err, "Error during initializing repo")
-	}
 
-	err = gitRepoClient.Fetch()
-	if err != nil {
-		return errors.Wrap(err, "Error during fetching repo")
-	}
+	// err := gitRepoClient.Init()
+	// if err != nil {
+	// 	return errors.Wrap(err, "Error during initializing repo")
+	// }
+
+	// err = gitRepoClient.Fetch()
+	// if err != nil {
+	// 	return errors.Wrap(err, "Error during fetching repo")
+	// }
 
 	commitSHA, err := gitRepoClient.LsRemote(revision)
 	if err != nil {
