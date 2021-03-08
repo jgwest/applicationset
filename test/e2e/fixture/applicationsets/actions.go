@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/argoproj-labs/applicationset/api/v1alpha1"
 	"github.com/argoproj-labs/applicationset/test/e2e/fixture/applicationsets/utils"
@@ -76,6 +77,17 @@ func (a *Actions) CreateClusterSecret(secretName string, clusterName string, clu
 	return a
 }
 
+func (a *Actions) DeleteClusterSecret(secretName string) *Actions {
+
+	err := utils.KubeClientset.CoreV1().Secrets(utils.ArgoCDNamespace).Delete(context.Background(), secretName, metav1.DeleteOptions{})
+
+	a.describeAction = fmt.Sprintf("deleting cluster Secret '%s'", secretName)
+	a.lastOutput, a.lastError = "", err
+	a.verifyAction()
+
+	return a
+}
+
 // Create creates an ApplicationSet using the provided value
 func (a *Actions) Create(appSet v1alpha1.ApplicationSet) *Actions {
 	a.context.t.Helper()
@@ -106,6 +118,13 @@ func (a *Actions) Delete() *Actions {
 	a.lastOutput, a.lastError = "", err
 	a.verifyAction()
 
+	return a
+}
+
+// Wait waits a specific length of time. NOTE: do NOT use this method unless you have absolutely no alternative: wait-based
+// conditions in tests are brittle.
+func (a *Actions) Wait(duration time.Duration) *Actions {
+	time.Sleep(duration)
 	return a
 }
 
@@ -152,6 +171,8 @@ func (a *Actions) Update(toUpdate func(*v1alpha1.ApplicationSet)) *Actions {
 
 func (a *Actions) verifyAction() {
 	a.context.t.Helper()
+
+	fmt.Println("verify action: '", a.describeAction, "'")
 
 	if a.describeAction != "" {
 		log.Infof("action: %s", a.describeAction)
